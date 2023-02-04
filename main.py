@@ -41,25 +41,7 @@ def main():
         source = pygame.mouse.get_pos()
         #source = (250,250)
 
-        proximityRects = casting.proximity_check(source, nodeRects, 200)
-        for rect in proximityRects:
-            for point in [rect.topleft, rect.topright, rect.bottomright, rect.bottomleft]:
-                sourceLine = casting.Line(source, point)
-
-                for side in [(rect.topleft, rect.topright),
-                                (rect.topright, rect.bottomright),
-                                (rect.bottomright, rect.bottomleft),
-                                (rect.bottomleft, rect.topleft)]:
-                    nodeLine = casting.Line(side[0], side[1])
-                    intersection = sourceLine.line_intersection(nodeLine)
-                    if intersection:
-                        pygame.draw.line(
-                            settings.SCREEN, (255, 50, 50), source, point, 10)  # Red line
-                        print(f"RED at source-pos {source} with output {intersection}\nProjected to point {point}\n")
-                    else:
-                        print(f"GREEN at source-pos {source} with output {intersection}\nProjected to point {point}\n")
-                        pygame.draw.line(
-                            settings.SCREEN, (150, 150, 5), source, point, 5)  # Green line
+        casting.cast(source, nodeRects, 200)
             
 
         pygame.display.update()

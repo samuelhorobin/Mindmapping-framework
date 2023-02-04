@@ -1,8 +1,26 @@
 import pygame
+import settings
+import shapely
+
+
+def resize_polygon(polygon, factor):
+    centroid = polygon.centroid
+
+    resizedCoords = []
+    for coord in polygon.exterior.coords:
+        displacement = (coord[0] - centroid.x, coord[1] - centroid.y)
+        displacement = (displacement[0] * factor, displacement[1] * factor)
+        newCoord = (centroid.x + displacement[0], centroid.y + displacement[1])
+        resizedCoords.append(newCoord)
+    resizedPolygon = shapely.Polygon(resizedCoords)
+
+    return resizedPolygon
 
 
 def proximity_check(sourceCoordinate, rectangles, radius):
-    range = pygame.Rect((sourceCoordinate[0] - (radius/2), (sourceCoordinate[1] - (radius/2))), (radius, radius))
+    range = pygame.Rect(
+        (sourceCoordinate[0] - (radius/2), (sourceCoordinate[1] - (radius/2))), (radius, radius))
+    draw_hitbox(range)
     inProximity = []
     for rectangle in rectangles:
         if pygame.Rect.colliderect(range, rectangle):
@@ -10,31 +28,26 @@ def proximity_check(sourceCoordinate, rectangles, radius):
     return inProximity
 
 
-class Line:
-    def __init__(self, coords1, coords2):
-        self.coords1 = coords1
-        self.coords2 = coords2
-        
-    def line_intersection(self, line2):
-        x1, y1 = self.coords1
-        x2, y2 = self.coords2
-        x3, y3 = line2.coords1
-        x4, y4 = line2.coords2
+def draw_hitbox(rect):
+    for side in [(rect.topleft, rect.topright),
+                 (rect.topright, rect.bottomright),
+                 (rect.bottomright, rect.bottomleft),
+                 (rect.bottomleft, rect.topleft)]:
+        pygame.draw.line(settings.SCREEN, (255, 0, 0), side[0], side[1], 3)
 
-        den = ((y4 - y3) * (x2 - x1)) - ((x4 - x3) * (y2 - y1))
-        if den == 0:
-            return None
 
-        ua = (((x4 - x3) * (y1 - y3)) - ((y4 - y3) * (x1 - x3))) / den
-        ub = (((x2 - x1) * (y1 - y3)) - ((y2 - y1) * (x1 - x3))) / den
-        print(f"ua: {ua}, ub: {ub}")
+def cast(source, allRectangles, radius):
+    rectangles = [shapely.Polygon((rect.topleft, rect.topright, rect.bottomright, rect.bottomleft))
+                  for rect in proximity_check(source, allRectangles, radius)]  # Relevant rectangles
+    innerRectangles = [resize_polygon(rectangle, 0.999) for rectangle in rectangles]
 
-        if (ua >= 0 and ua <= 1) and (ub >= 0 and ub <= 1):
-            x = x1 + (ua * (x2 - x1))
-            y = y1 + (ua * (y2 - y1))
-            if (x,y) == self.coords1 or (x,y) == self.coords2:
-                return None
-            return (x, y)
-
-        else:
-            return None
+    for rectangle in rectangles:
+        for point in list(dict.fromkeys(rectangle.exterior.coords)):
+            ray = shapely.LineString([(source), (point)])
+            intersects = False
+            for innerRectangle in innerRectangles:
+                if ray.intersects(innerRectangle):
+                    intersects = True
+            if intersects == False:
+                pygame.draw.line(settings.SCREEN, (255, 255, 255),
+                                 ray.coords[0], ray.coords[1])
