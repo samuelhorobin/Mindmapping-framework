@@ -24,25 +24,24 @@ map.setup()
 nodeRects = []
 for node in map.nodes:
     nodeRects.append(node.nodeRect)
-
+font = pygame.font.Font(None, 36)
 
 def main():
     while True:
-        time_delta = clock.tick(60)/1000.0
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 exit()
 
         settings.SCREEN.fill((0, 0, 0))
-
         map.run()
-
         source = pygame.mouse.get_pos()
         #source = (250,250)
-
         casting.cast(source, nodeRects, 200)
-            
+
+        fps = clock.get_fps()
+        fpsText = font.render(str(int(fps)), True, (255, 255, 255))
+        settings.SCREEN.blit(fpsText, (10,10))            
 
         pygame.display.update()
         clock.tick(60)
